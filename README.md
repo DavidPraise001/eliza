@@ -63,6 +63,8 @@ Kismet is an AI agent that lives in Discord and Telegram communities, acting as 
 - Node.js 18+ and npm
 - Discord Application with Bot Token
 - Sei wallet with test funds
+- Ollama installed locally
+- (Optional) OpenRouter API key for advanced AI features
 - (Optional) Twitter Developer Account
 
 ### 1. Clone and Install

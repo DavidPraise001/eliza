@@ -89,6 +89,12 @@ SEI_RPC_ENDPOINT=https://rpc.sei-apis.com
 SEI_CHAIN_ID=pacific-1
 KISMET_WALLET_ADDRESS=sei1abcdef...
 
+# AI Configuration
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama2
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=anthropic/claude-3-haiku
+
 # Agent Configuration
 KISMET_BUDGET=1000
 MICRO_REWARD_AMOUNT=5
@@ -106,7 +112,56 @@ Get Discord channel IDs for monitoring:
 3. Select "Copy ID"
 4. Add to `DISCORD_MONITOR_CHANNELS` (comma-separated)
 
-## 🐦 Step 4: Twitter Integration (Optional)
+## 🤖 Step 4: AI Setup (Ollama + OpenRouter)
+
+### 4.1 Install Ollama
+```bash
+# Install Ollama (https://ollama.ai)
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama service
+ollama serve
+
+# Pull recommended model for content analysis
+ollama pull llama2
+
+# For better performance, use a larger model
+ollama pull llama2:13b
+
+# Test installation
+ollama run llama2 "Hello world"
+```
+
+### 4.2 Configure OpenRouter (Optional but Recommended)
+OpenRouter provides access to advanced AI models for better content analysis.
+
+1. Sign up at [OpenRouter](https://openrouter.ai/)
+2. Get your API key from the dashboard
+3. Add to your `.env`:
+```bash
+OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_MODEL=anthropic/claude-3-haiku
+```
+
+Recommended models:
+- `anthropic/claude-3-haiku` - Fast and cost-effective
+- `anthropic/claude-3-sonnet` - Better quality analysis
+- `openai/gpt-3.5-turbo` - Balanced performance
+- `meta-llama/llama-2-13b-chat` - Open source option
+
+### 4.3 Test AI Configuration
+```bash
+# Test Ollama connection
+curl http://localhost:11434/api/version
+
+# Test OpenRouter (if configured)
+curl -X POST https://openrouter.ai/api/v1/chat/completions \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"anthropic/claude-3-haiku","messages":[{"role":"user","content":"Hello"}],"max_tokens":1}'
+```
+
+## 🐦 Step 5: Twitter Integration (Optional)
 
 ### 4.1 Twitter Developer Account
 1. Apply for [Twitter Developer Account](https://developer.twitter.com/)
@@ -122,7 +177,7 @@ TWITTER_ACCESS_TOKEN=your_access_token
 TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret
 ```
 
-## 🏃‍♂️ Step 5: Running Kismet
+## 🏃‍♂️ Step 6: Running Kismet
 
 ### 5.1 Development Mode
 ```bash
@@ -144,7 +199,7 @@ docker-compose up -d
 docker-compose logs -f kismet
 ```
 
-## 👥 Step 6: Community Onboarding
+## 👥 Step 7: Community Onboarding
 
 ### 6.1 User Wallet Registration
 Community members need to register their Sei wallets:
@@ -158,7 +213,7 @@ Community members need to register their Sei wallets:
 3. Watch Kismet analyze and potentially reward
 4. Check if trends emerge and bounties are created
 
-## 📊 Step 7: Monitoring & Maintenance
+## 📊 Step 8: Monitoring & Maintenance
 
 ### 7.1 Check Agent Status
 ```bash

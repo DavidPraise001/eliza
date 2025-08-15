@@ -12,8 +12,13 @@ export interface KismetConfig {
     chainId: string;
     walletAddress: string;
   };
-  openai: {
+  ollama: {
+    url: string;
+    model: string;
+  };
+  openrouter: {
     apiKey: string;
+    model: string;
   };
   twitter?: {
     apiKey: string;

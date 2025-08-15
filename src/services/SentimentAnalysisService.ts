@@ -1,14 +1,17 @@
 import Sentiment from 'sentiment';
 import { ContentAnalysis, ContentType, MessageContext, Reaction } from '../types';
+import { AIService, ContentAnalysisRequest } from './AIService';
 
 export class SentimentAnalysisService {
   private sentiment: Sentiment;
   private positiveEmojis: Set<string>;
   private negativeEmojis: Set<string>;
   private contentTypeKeywords: Map<ContentType, string[]>;
+  private aiService?: AIService;
 
-  constructor() {
+  constructor(aiService?: AIService) {
     this.sentiment = new Sentiment();
+    this.aiService = aiService;
     this.initializeEmojiSets();
     this.initializeContentTypeKeywords();
   }
@@ -36,6 +39,78 @@ export class SentimentAnalysisService {
   }
 
   public async analyzeContent(message: MessageContext): Promise<ContentAnalysis> {
+    const text = message.content.toLowerCase();
+    
+    // Try AI-enhanced analysis first if available
+    if (this.aiService && text.length > 10) {
+      try {
+        const aiAnalysis = await this.aiService.analyzeContent({
+          text: message.content,
+          contentType: this.determineContentType(text, message.attachments || []),
+          metadata: {
+            reactions: message.reactions,
+            attachments: message.attachments,
+            platform: message.platform
+          }
+        });
+        
+        // Combine AI analysis with traditional analysis
+        return await this.combineAnalyses(message, aiAnalysis);
+      } catch (error) {
+        console.warn('AI analysis failed, falling back to traditional analysis:', error.message);
+      }
+    }
+    
+    // Fallback to traditional sentiment analysis
+    return this.performTraditionalAnalysis(message);
+  }
+
+  private async combineAnalyses(message: MessageContext, aiAnalysis: any): Promise<ContentAnalysis> {
+    const text = message.content.toLowerCase();
+    const sentimentResult = this.sentiment.analyze(text);
+    
+    // Analyze emojis
+    const emojiAnalysis = this.analyzeEmojis(text);
+    
+    // Analyze reactions if available
+    const reactionAnalysis = this.analyzeReactions(message.reactions || []);
+    
+    // Determine content type
+    const contentType = this.determineContentType(text, message.attachments || []);
+    
+    // Combine AI themes with traditional theme extraction
+    const traditionalThemes = this.extractThemes(text);
+    const combinedThemes = [...new Set([...aiAnalysis.themes, ...traditionalThemes])];
+    
+    // Calculate engagement score
+    const engagementScore = this.calculateEngagementScore(
+      aiAnalysis.sentiment,
+      emojiAnalysis.score,
+      reactionAnalysis.score,
+      message.reactions?.length || 0,
+      message.replies?.length || 0
+    );
+
+    // Weight AI sentiment with traditional factors
+    const finalSentiment = Math.min(1, Math.max(0, 
+      (aiAnalysis.sentiment * 0.6) + 
+      (emojiAnalysis.score * 0.2) + 
+      (reactionAnalysis.score * 0.2)
+    ));
+
+    return {
+      sentiment: finalSentiment,
+      positiveWords: sentimentResult.positive,
+      negativeWords: sentimentResult.negative,
+      emojis: emojiAnalysis.emojis,
+      reactionCount: message.reactions?.reduce((sum, r) => sum + r.count, 0) || 0,
+      engagementScore,
+      contentType,
+      themes: combinedThemes
+    };
+  }
+
+  private async performTraditionalAnalysis(message: MessageContext): Promise<ContentAnalysis> {
     const text = message.content.toLowerCase();
     const sentimentResult = this.sentiment.analyze(text);
     

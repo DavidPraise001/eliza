@@ -11,6 +11,7 @@ import kismetTwitterPlugin from './plugins/kismet-twitter';
 import { SentimentAnalysisService } from './services/SentimentAnalysisService';
 import { BountyService } from './services/BountyService';
 import { SeiBlockchainService } from './services/SeiBlockchainService';
+import { AIService } from './services/AIService';
 import { DiscordService } from './plugins/kismet-discord';
 import { TwitterService } from './plugins/kismet-twitter';
 import { KismetConfig } from './types';
@@ -39,6 +40,7 @@ class KismetAgent {
   private runtime: any;
   private config: KismetConfig;
   private services: {
+    ai: AIService;
     sentiment: SentimentAnalysisService;
     bounty: BountyService;
     sei: SeiBlockchainService;
@@ -48,8 +50,16 @@ class KismetAgent {
 
   constructor() {
     this.config = this.loadConfiguration();
+    
+    // Initialize AI service first
+    const aiService = new AIService({
+      ollama: this.config.ollama,
+      openrouter: this.config.openrouter
+    });
+    
     this.services = {
-      sentiment: new SentimentAnalysisService(),
+      ai: aiService,
+      sentiment: new SentimentAnalysisService(aiService),
       bounty: new BountyService(),
       sei: new SeiBlockchainService({
         privateKey: this.config.sei.privateKey,
@@ -90,8 +100,13 @@ class KismetAgent {
         chainId: process.env.SEI_CHAIN_ID!,
         walletAddress: process.env.KISMET_WALLET_ADDRESS!
       },
-      openai: {
-        apiKey: process.env.OPENAI_API_KEY || ''
+      ollama: {
+        url: process.env.OLLAMA_URL || 'http://localhost:11434',
+        model: process.env.OLLAMA_MODEL || 'llama2'
+      },
+      openrouter: {
+        apiKey: process.env.OPENROUTER_API_KEY || '',
+        model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-haiku'
       },
       twitter: process.env.TWITTER_API_KEY ? {
         apiKey: process.env.TWITTER_API_KEY!,
@@ -111,6 +126,10 @@ class KismetAgent {
   async initialize(): Promise<void> {
     try {
       logger.info('🚀 Initializing Kismet Agent...');
+
+      // Initialize AI service first
+      await this.services.ai.initialize();
+      logger.info('✅ AI service ready');
 
       // Initialize Sei blockchain service
       await this.services.sei.initialize();
