@@ -1,0 +1,53 @@
+{
+  "name": "kismet-agent",
+  "version": "1.0.0",
+  "description": "Kismet - The Proactive Community Curation Agent",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest"
+  },
+  "keywords": [
+    "ai-agent",
+    "elizaos",
+    "blockchain",
+    "sei",
+    "discord",
+    "telegram",
+    "community",
+    "curation"
+  ],
+  "author": "Kismet Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "@elizaos/core": "^1.0.0",
+    "@elizaos/plugin-node": "^1.0.0",
+    "@elizaos/plugin-bootstrap": "^1.0.0",
+    "@elizaos/adapter-discord": "^1.0.0",
+    "@elizaos/adapter-telegram": "^1.0.0",
+    "@cosmjs/stargate": "^0.32.2",
+    "@cosmjs/proto-signing": "^0.32.2",
+    "@sei-js/core": "^4.0.0",
+    "discord.js": "^14.14.1",
+    "telegraf": "^4.15.6",
+    "sentiment": "^5.0.2",
+    "compromise": "^14.10.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "cron": "^3.1.6",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/jest": "^29.5.8",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.1",
+    "jest": "^29.7.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0"
+  }
+}
