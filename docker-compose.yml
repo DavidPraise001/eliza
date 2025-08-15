@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  kismet:
+    build: .
+    container_name: kismet-agent
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    volumes:
+      - ./kismet.log:/app/kismet.log
+      - ./data:/app/data
+    networks:
+      - kismet-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Database for persistent storage
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: kismet-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: kismet
+  #     POSTGRES_USER: kismet
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - kismet-network
+
+  # Optional: Redis for caching
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: kismet-redis
+  #   restart: unless-stopped
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - kismet-network
+
+networks:
+  kismet-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
