@@ -34,19 +34,3 @@ declare global {
     ethereum?: any;
   }
 }
-
-export interface WalletClient {
-  account: any;
-  requestAddresses(): Promise<string[]>;
-  getBalance(params: { address: string }): Promise<bigint>;
-  [key: string]: any;
-}
-
-export interface Account {
-  address: string;
-  [key: string]: any;
-}
-
-declare module 'symphony-sdk' {
-  export * from 'symphony-sdk/viem';
-}

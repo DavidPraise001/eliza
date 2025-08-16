@@ -18,10 +18,10 @@ import {
   EventType,
 } from '@elizaos/core';
 import { z } from 'zod';
-import { Symphony } from "symphony-sdk";
-import { createWalletClient, http, parseEther, formatEther } from 'viem';
+import { Symphony } from "symphony-sdk/viem";
+import { createWalletClient, createPublicClient, http, parseEther, formatEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import type { WalletClient, Account } from './types/symphony-sdk';
+import type { WalletClient, Account } from 'viem';
 // Define SEI testnet chain configuration since it might not be available in viem
 const seiTestnet = {
   id: 713715,
@@ -183,7 +183,12 @@ export class SeiSwapService extends Service {
     try {
       // For native SEI, use getBalance
       if (tokenAddress === this.symphony.getConfig().nativeAddress) {
-        const balance = await this.walletClient.getBalance({ address: this.account.address });
+        // Use the public client for balance queries
+        const publicClient = createPublicClient({
+          chain: seiTestnet,
+          transport: http(this.rpcUrl),
+        });
+        const balance = await publicClient.getBalance({ address: this.account.address });
         return formatEther(balance);
       }
       

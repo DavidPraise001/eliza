@@ -8,12 +8,14 @@ async function testSeiSwapPlugin() {
   try {
     console.log('🚀 Initializing SEI Swap Plugin...');
     
-    // Initialize the plugin
-    await seiSwapPlugin.init({
-      PRIVATE_KEY: process.env.PRIVATE_KEY!,
-      RPC_URL: process.env.RPC_URL,
-      SLIPPAGE_TOLERANCE: process.env.SLIPPAGE_TOLERANCE
-    });
+    // Initialize the plugin (runtime is optional for testing)
+    if (seiSwapPlugin.init) {
+      await seiSwapPlugin.init({
+        PRIVATE_KEY: process.env.PRIVATE_KEY!,
+        RPC_URL: process.env.RPC_URL || 'https://rpc-testnet.sei.io',
+        SLIPPAGE_TOLERANCE: process.env.SLIPPAGE_TOLERANCE || '1.0'
+      }, undefined as any);
+    }
     
     console.log('✅ Plugin initialized successfully');
     

@@ -3,22 +3,24 @@
   "version": "1.0.0",
   "description": "SEI token swapping plugin using Symphony protocol",
   "main": "sei-swap-plugin.ts",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/sei-swap-plugin.js",
-    "dev": "ts-node sei-swap-plugin.ts"
+    "dev": "ts-node --esm sei-swap-plugin.ts",
+    "demo": "node demo.js"
   },
   "dependencies": {
     "@elizaos/core": "^1.0.0",
-    "symphony-sdk": "^1.0.0",
+    "dotenv": "^16.0.0",
+    "symphony-sdk": "^2.4.8",
     "viem": "^2.0.0",
-    "zod": "^3.22.0",
-    "dotenv": "^16.0.0"
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   },
   "keywords": [
     "sei",
