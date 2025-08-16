@@ -18,10 +18,28 @@ import {
   EventType,
 } from '@elizaos/core';
 import { z } from 'zod';
-import { Symphony } from "symphony-sdk/viem";
+import { Symphony } from "symphony-sdk";
 import { createWalletClient, http, parseEther, formatEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { seiTestnet } from 'viem/chains';
+import type { WalletClient, Account } from './types/symphony-sdk';
+// Define SEI testnet chain configuration since it might not be available in viem
+const seiTestnet = {
+  id: 713715,
+  name: 'SEI Testnet',
+  network: 'sei-testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'SEI',
+    symbol: 'SEI',
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc-testnet.sei.io'] },
+    public: { http: ['https://rpc-testnet.sei.io'] },
+  },
+  blockExplorers: {
+    default: { name: 'SEI Explorer', url: 'https://testnet.sei.io' },
+  },
+} as const;
 
 /**
  * Defines the configuration schema for the SEI swap plugin
@@ -54,8 +72,8 @@ export class SeiSwapService extends Service {
     'Provides SEI token swapping functionality using Symphony protocol.';
 
   private symphony: Symphony;
-  private walletClient: any;
-  private account: any;
+  private walletClient: WalletClient;
+  private account: Account;
   private rpcUrl: string;
   private slippageTolerance: string;
 
