@@ -134,6 +134,46 @@ export class NotificationService extends Service {
   }
 
   async initialize(): Promise<void> {
+    logger.info('Initializing notification service...');
+    
+    // Validate required environment variables
+    const missingVars = [];
+    if (!this.coinMarketCapApiKey) missingVars.push('COINMARKETCAP_API_KEY');
+    if (!this.telegramBotToken) missingVars.push('TELEGRAM_BOT_TOKEN');
+    if (!this.telegramChatId) missingVars.push('TELEGRAM_CHAT_ID');
+    
+    if (missingVars.length > 0) {
+      logger.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    }
+    
+    // Validate chat_id format
+    try {
+      this.validateChatId(this.telegramChatId);
+      logger.info(`✅ Chat ID validation passed: ${this.telegramChatId}`);
+    } catch (error) {
+      logger.error(`❌ Invalid TELEGRAM_CHAT_ID format: ${error.message}`);
+      throw error;
+    }
+    
+    // Test Telegram bot connectivity
+    try {
+      await this.testTelegramConnection();
+      logger.info('✅ Telegram bot connection successful');
+    } catch (error) {
+      logger.error(`❌ Telegram bot connection failed: ${error.message}`);
+      throw error;
+    }
+    
+    // Test CoinMarketCap API
+    try {
+      const priceData = await this.getSeiPrice();
+      logger.info(`✅ CoinMarketCap API working - SEI price: $${priceData.price.toFixed(6)}`);
+    } catch (error) {
+      logger.error(`❌ CoinMarketCap API failed: ${error.message}`);
+      throw error;
+    }
+    
     // Load existing proposals to prevent duplicate notifications
     await this.loadExistingProposals();
     
@@ -141,7 +181,34 @@ export class NotificationService extends Service {
     this.startPriceMonitoring();
     this.startProposalMonitoring();
     
-    logger.info('Notification service initialized');
+    logger.info('🎉 Notification service initialized successfully');
+    logger.info(`⏱️ Price monitoring interval: ${this.priceCheckInterval / 1000}s`);
+    logger.info(`⏱️ Proposal monitoring interval: ${this.proposalCheckInterval / 1000}s`);
+  }
+
+  /**
+   * Tests Telegram bot connection
+   */
+  private async testTelegramConnection(): Promise<void> {
+    try {
+      const response = await axios.get(
+        `https://api.telegram.org/bot${this.telegramBotToken}/getMe`,
+        { timeout: 10000 }
+      );
+      
+      if (response.status !== 200) {
+        throw new Error(`Telegram API returned status ${response.status}`);
+      }
+      
+      const botInfo = response.data.result;
+      logger.info(`Connected to Telegram bot: @${botInfo.username} (${botInfo.first_name})`);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorDetails = error.response?.data?.description || error.message;
+        throw new Error(`Telegram connection failed: ${errorDetails}`);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -337,6 +404,14 @@ export class NotificationService extends Service {
     chatId: string,
     userId: string
   ): string {
+    // Validate chat_id before creating alert
+    try {
+      this.validateChatId(chatId);
+    } catch (error) {
+      logger.error(`Failed to add price alert - invalid chat_id: ${error.message}`);
+      throw error;
+    }
+
     const id = `${symbol}_${targetPrice}_${condition}_${Date.now()}`;
     const alert: PriceAlert = {
       id,
@@ -349,7 +424,13 @@ export class NotificationService extends Service {
     };
 
     this.priceAlerts.set(id, alert);
-    logger.info(`Price alert added: ${id}`);
+    logger.info(`✅ Price alert added successfully:`);
+    logger.info(`   ID: ${id}`);
+    logger.info(`   Symbol: ${alert.symbol}`);
+    logger.info(`   Target: $${targetPrice} ${condition}`);
+    logger.info(`   Chat ID: ${chatId}`);
+    logger.info(`   Total active alerts: ${this.priceAlerts.size}`);
+    
     return id;
   }
 
@@ -374,12 +455,20 @@ export class NotificationService extends Service {
    * Starts price monitoring with improved message formatting
    */
   private startPriceMonitoring(): void {
+    logger.info(`Starting price monitoring with ${this.priceCheckInterval / 1000}s interval`);
+    
     this.priceCheckTimer = setInterval(async () => {
-      if (this.priceAlerts.size === 0) return;
+      logger.debug(`Price check cycle - Active alerts: ${this.priceAlerts.size}`);
+      
+      if (this.priceAlerts.size === 0) {
+        logger.debug('No price alerts active, skipping check');
+        return;
+      }
 
       try {
         const priceData = await this.getSeiPrice();
         const currentPrice = priceData.price;
+        logger.debug(`Current SEI price: $${currentPrice.toFixed(6)}`);
 
         for (const [alertId, alert] of this.priceAlerts.entries()) {
           if (alert.symbol !== 'SEI') continue;
@@ -388,7 +477,11 @@ export class NotificationService extends Service {
             (alert.condition === 'above' && currentPrice >= alert.targetPrice) ||
             (alert.condition === 'below' && currentPrice <= alert.targetPrice);
 
+          logger.debug(`Alert ${alertId}: target=${alert.targetPrice} ${alert.condition}, current=${currentPrice.toFixed(6)}, shouldTrigger=${shouldTrigger}`);
+
           if (shouldTrigger) {
+            logger.info(`🚨 Price alert triggered! ${alertId}`);
+            
             // Create unescaped message first
             const unescapedMessage = `🚨 *SEI Price Alert*
 
@@ -405,13 +498,15 @@ Your alert: ${alert.condition} $${alert.targetPrice}
 
             await this.sendTelegramMessage(message, alert.chatId);
             this.priceAlerts.delete(alertId);
-            logger.info(`Price alert triggered and removed: ${alertId}`);
+            logger.info(`✅ Price alert notification sent and alert removed: ${alertId}`);
           }
         }
       } catch (error) {
         logger.error({ error }, 'Error during price monitoring');
       }
     }, this.priceCheckInterval);
+    
+    logger.info('✅ Price monitoring started');
   }
 
   /**
